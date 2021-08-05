@@ -1,5 +1,7 @@
 Reproducer for `ISPN000299: Unable to acquire lock after 10 seconds` when using a relay to connect sites.
 
+https://issues.redhat.com/projects/ISPN/issues/ISPN-13219
+
 # Overview
 
 - Infinispan-Configuration is located in `conf`
