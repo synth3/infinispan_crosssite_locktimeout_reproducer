@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<infinispan 
+    xmlns:xi="http://www.w3.org/2001/XInclude"
+    xmlns="urn:infinispan:config:11.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="urn:infinispan:config:11.0 http://www.infinispan.org/schemas/infinispan-config-11.0.xsd">
+    
+    <xi:include href="infinispan.transports.default.xml" />
+    
+    <!--==================================================================================== 
+    Cross-Site Stack 
+     ====================================================================================-->
+    <!-- Jgroups-config in infinispan config: https://infinispan.org/docs/11.0.x/titles/embedding/embedding.html#using_jgroups_inline-cluster-transport -->
+    <!-- See also: http://www.jgroups.org/manual4/index.html#protlist -->
+    <jgroups>
+        <!-- 
+             Transport stack for the cross-site-relay - extension of our default tcpping-stack
+             see also: https://infinispan.org/docs/11.0.x/titles/embedding/embedding.html#using_jgroups_inheritance-cluster-transport
+        -->
+        <stack name="global_bus" extends="tcp_tcpping">
+            <!-- for special values for "bind_addr" like "SITE_LOCAL", "NON_LOOPBACK" or "match-interface" see: http://www.jgroups.org/manual4/index.html#Transport -->
+            <TCP
+                stack.combine="COMBINE"
+                bind_addr="${jgroups.bus.bind.address:SITE_LOCAL}"
+                bind_port="${jgroups.bus.bind.port}"
+                port_range="0"/>
+            <!-- Format of "initial_hosts" is: "host1[port1],host2[port2],..." -->
+            <!-- See also: http://www.jgroups.org/manual4/index.html#TCPPING -->
+            <TCPPING 
+                stack.combine="COMBINE"
+                async_discovery="true"
+                initial_hosts="${jgroups.bus.tcpping.initial_hosts}"
+                port_range="0" />
+        </stack>
+        <!-- 
+             Extend our default JGroups stack to add the relay.
+             see also: https://infinispan.org/docs/11.0.x/titles/embedding/embedding.html#using_jgroups_inheritance-cluster-transport
+        -->
+        <stack name="crosssite" extends="${infinispan.transport.stack.name:udp_multicast}">
+            <!-- "site" is the name of the local site -->
+            <relay.RELAY2 xmlns="urn:org:jgroups" 
+                    relay_multicasts="true"
+                    site="${jgroups.site.name:default}"
+                    max_site_masters="1"/>
+            <!-- configure the transport to use for connecting the sites and declare all sites to connect -->
+            <remote-sites default-stack="global_bus"> 
+                 <remote-site name="LON"/>
+                 <remote-site name="NYC"/>
+            </remote-sites>
+        </stack>
+    </jgroups>
+
+    <cache-container default-cache="distributed-cache">
+        <transport cluster="${infinispan.cluster.name}" stack="crosssite" node-name="${infinispan.node.name:}"/>
+
+        <distributed-cache name="distributed-cache">
+            <backups>
+                <backup site="LON" strategy="SYNC" />
+                <backup site="NYC" strategy="SYNC" />
+            </backups>
+        </distributed-cache>
+    </cache-container>
+</infinispan>

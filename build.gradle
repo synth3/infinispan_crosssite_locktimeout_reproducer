@@ -1,0 +1,24 @@
+apply plugin: 'java'
+
+repositories {
+    mavenCentral()
+}
+
+// definition of the project dependencies
+dependencies {
+    def infinispanversion = '11.0.11.Final'
+    implementation group: 'org.infinispan', name: 'infinispan-commons', version: infinispanversion
+    implementation group: 'org.infinispan', name: 'infinispan-core', version: infinispanversion
+    implementation group: 'org.infinispan', name: 'infinispan-clustered-counter', version: infinispanversion
+    implementation group: 'org.infinispan', name: 'infinispan-clustered-lock', version: infinispanversion
+    implementation group: 'org.infinispan', name: 'infinispan-multimap', version: infinispanversion
+    
+    implementation group: 'log4j', name: 'log4j', version: '1.2.17'
+}
+
+task runRelayTest(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'testing.RelayTest'
+    jvmArgs '-Djava.net.preferIPv4Stack=true'
+
+}
